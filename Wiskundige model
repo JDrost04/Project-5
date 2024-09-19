@@ -1,0 +1,40 @@
+# ons wiskundige model 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+Dienstregeling = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name = "Dienstregeling")
+Afstandsmatrix = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name = "Afstandsmatrix" )
+
+print(Dienstregeling.head())
+print(Afstandsmatrix.head())
+
+max_cap = 300
+SOH = 85 #-95 #(even vragen)
+oplaadtempo_90 = 450 
+oplaadtempo_10 = 60
+
+DCap_85 = max_cap * 0.85 #(255 kWh)(even vragen)
+DCap_95 = max_cap * 0.95 #(285 kWh)(even vragen)
+
+Overdag_90_85 = DCap_85*0.9
+Overdag_90_95 = DCap_95*0.9
+""""   
+Overdag niet meer dan 90% opladen = 229,5 - 256,5 kWh 
+
+Altijd tenminste 15 min achtereen worden opgeladen. 
+
+Veiligheidsmarge van ongeveer 10% van de SOH -> bus minimaal SOC (state of charge) waarde van 10%Veiligheidsmarge van ongeveer 10% van de SOH -> bus minimaal SOC (state of charge) waarde van 10%. Minimale hoeveelheid in accu = 25,5 -28,5 kWh 
+
+Verbruik per km =  0.7-2.5 kWh 
+
+Idling verbruikt het 0.01 kWh (verbruik van bus in stilstand) 
+
+Lijn 401 eerste rit vertrekt om 6:04 vanuit de airport (Apt) naar Eindhoven Centraal (bst). 401 laatste rit van Apt naar bst is om 00:31. Deze lijn zou klaar moeten zijn tussen de 00:53 en 00:56. 
+
+Lijn 401 eerste rit vertrekt om 5:07 vanuit Eindhoven Centraal (bst) naar airport (Apt). 401 laatste rit van bst naar apt is om 00:09. Deze lijn zou klaar moeten zijn tussen de 00:31 en 00:33. 
+
+Lijn 400 eerste rit vertrekt om 7:19 vanuit de airport (Apt) naar Eindhoven Centraal (bst). 400 laatste rit van Apt naar bst is om 20:46. Deze lijn zou klaar moeten zijn tussen de 21:07 en 21:09 
+
+Lijn 400 eerste rit vertrekt om 06:52 vanuit Eindhoven Centraal (bst) naar airport (Apt). 401 laatste rit van bst naar apt is om 19:37. Deze lijn zou klaar moeten zijn tussen de 19:58 en 20:00.  
+""""
