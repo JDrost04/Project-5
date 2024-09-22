@@ -3,11 +3,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-Dienstregeling = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name = "Dienstregeling")
+
 Afstandsmatrix = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name = "Afstandsmatrix" )
+all_sheets = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name = None)
+print("Beschikbare sheets in het bestand:", list(all_sheets.keys()))
+
+# we hebben 2 tabellen dus die kunnen we zo laten zien:
+Dienstregeling = all_sheets['Dienstregeling']
+Afstandsmatrix = all_sheets['Afstandsmatrix']
 
 print(Dienstregeling.head())
 print(Afstandsmatrix.head())
+
 
 max_cap = 300
 SOH = [85, 95] #(even vragen)
@@ -19,7 +26,60 @@ DCap_95 = max_cap * 0.95 #(285 kWh)(even vragen)
 DCap = [DCap_85, DCap_95]
 Overdag_90 = [DCap_85*0.9,DCap_95*0.9]
 usage = [0.7,2.5] 
-#Definitie maken over de batterij gebruik?
+
+# Ik bereken hier de afstand in km
+Afstandsmatrix["afstand in meters"] = Afstandsmatrix["afstand in meters"]/1000
+# Hier hernoem ik de kolom.
+Afstandsmatrix = Afstandsmatrix.rename(columns={'afstand in meters': 'afstand in km'})
+# Ik wil laten zien dat alle waarde die NaN zijn materiaalritten zijn.
+Afstandsmatrix["buslijn"] = Afstandsmatrix["buslijn"].fillna("materiaalrit")
+
+# hoeveel km per uur moet je rijden?
+# we hebben het aantal km en het aantal minuten.
+# we moeten 1 kolomen aanmaken met max reistijd per uur.
+# we moeten 1 kolom aanmaken met min reistijd per uur.
+Afstandsmatrix["min reistijd in min"] = Afstandsmatrix["min reistijd in min"]/60
+Afstandsmatrix["max reistijd in min"] = Afstandsmatrix["max reistijd in min"]/60
+Afstandsmatrix = Afstandsmatrix.rename(columns={'min reistijd in min': 'min reistijd in uur'})
+Afstandsmatrix = Afstandsmatrix.rename(columns={'max reistijd in min': 'max reistijd in uur'})
+
+# we willen weten hoeveel km per uur een bus gemiddeld gaat.
+Afstandsmatrix["max_speed"] = Afstandsmatrix["afstand in km"]/ Afstandsmatrix['min reistijd in uur'] 
+Afstandsmatrix["min_speed"] = Afstandsmatrix["afstand in km"]/ Afstandsmatrix['max reistijd in uur'] 
+
+# we willen weten hoeveel kwh je nodig hebt per rit:d
+#Verbruik per km =  0.7-2.5 kWh 
+Afstandsmatrix["max_energy"] = Afstandsmatrix["afstand in km"]* 2.5
+Afstandsmatrix["min_energy"] = Afstandsmatrix["afstand in km"]* 0.7
+
+# Ik ga ervan uit dat het aantal energie die je gebruikt en hoe snel je rijd linear is.
+# de berekening doet het niet en ik begrijp niet waarom??? Kan je het me laten weten Yvonne? 
+
+# busrit = van ehvapt naar ehvbst van 400 of andersom
+# speed = gemiddelde km/uur
+# Functie om het energieverbruik te berekenen
+def calculate_energy(busrit, speed):
+    if speed < busrit['min_speed']:
+        energy_consumed = busrit['min_energy']
+    elif speed > busrit['max_speed']:
+        energy_consumed = busrit['max_energy']
+    else:
+        m = (busrit['max_energy'] - busrit['min_energy']) / (busrit['max_speed'] - busrit['min_speed'])  # richtingscoëfficiënt berekenen
+        b = busrit['min_energy'] - m * busrit['min_speed'] #beginwaarde berekenen
+        energy_consumed = m * speed + b # lineare lijn vormen
+
+    percentage_hb = (energy_consumed / DCap_85*0.9) * 100  # hoeveel energie er maximaal leeg gaat in de accu  
+    percentage_lb = (energy_consumed / DCap_95*0.9) * 100  # hoeveel energie er minimaal leeg gaat in de accu 
+    return energy_consumed, percentage_lb, percentage_hb
+
+# Gegevens voor de busrit en snelheid
+busrit = 0  # Eerste rij
+speed = 27  # Gemiddelde km/uur
+
+# Bereken energieverbruik en percentage
+energy_consumed, percentage_lb, percentage_hb = calculate_energy(df.iloc[busrit], speed)
+
+#Definitie maken over de batterij gebruik? Lottes interpetatie 
 def battery_usage(distance):
     """
     Je wilt de batterij gebruik per verschillende routes berekenen
@@ -74,3 +134,4 @@ Lijn 400 eerste rit vertrekt om 7:19 vanuit de airport (Apt) naar Eindhoven Cent
 
 Lijn 400 eerste rit vertrekt om 06:52 vanuit Eindhoven Centraal (bst) naar airport (Apt). 401 laatste rit van bst naar apt is om 19:37. Deze lijn zou klaar moeten zijn tussen de 19:58 en 20:00.  
 """"
+
