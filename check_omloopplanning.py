@@ -7,20 +7,20 @@ from datetime import datetime, timedelta
 # er moet rekening mee gehouden worden dat de omlopen veranderd kunnen worden, dat is nu nog niet het geval
 # er moet rekening mee gehouden worden dat in idle er niet opgeladen wordt, maar pas wanneer er van omloop gewisseld wordt
 
-df = pd.read_excel('omloopplanning.xlsx')
+circuit_planning = pd.read_excel('omloopplanning.xlsx')
 
-max_cap = 300 # maximale capaciteit in kWH
+max_capacity = 300 # maximale capaciteit in kWH
 SOH = [85, 95] # State of Health
-oplaadtempo_90 = 450 / 60 # kwh per minuut bij opladen tot 90%
-oplaadtempo_10 = 60 / 60 # kwh per minuut bij oladen tot 10%
-DCap_85 = max_cap * 0.85 # (255 kWh)
-DCap_95 = max_cap * 0.95 # (285 kWh)
-DCap = [DCap_85, DCap_95]
-Overdag_90 = [DCap_85*0.9, DCap_95*0.9]
-usage = [0.7, 2.5] # kWh per km
+charging_speed_90 = 450 / 60 # kwh per minuut bij opladen tot 90%
+charging_time_10 = 60 / 60 # kwh per minuut bij oladen tot 10%
+actual_capacity_85 = max_capacity * 0.85 # (255 kWh)
+actual_capacity_95 = max_capacity * 0.95 # (285 kWh)
+actual_capacity = [actual_capacity_85, actual_capacity_95]
+daytime_limit = [actual_capacity_85*0.9, actual_capacity_95*0.9]
+consumption_per_km = [0.7, 2.5] # kWh per km
 
 # Functie om batterijstatus te berekenen
-def simuleer_batterij(df, DCap, vertrektijd, eindtijd):
+def simulate_battery(circuit_planning, actual_capacity, starting_time, end_time):
     """
     Simuleer de batterijstatus gedurende de omloopplanning.
     Parameters:
@@ -30,46 +30,46 @@ def simuleer_batterij(df, DCap, vertrektijd, eindtijd):
         - eindtijd: Laatste eindtijd van de dienst.
     Output: Finale batterijpercentage na de simulatie.
     """
-    battery = DCap * 0.9  # Begin met 90% batterij
-    min_battery = DCap * 0.1  # Minimum batterijpercentage
-    max_battery_dag = DCap * 0.9  # Maximaal 90% overdag
-    max_battery_nacht = DCap  # Maximaal 100% 's nachts
-    opladen_minuten = 15  # Minimaal 15 minuten opladen
+    battery = actual_capacity * 0.9  # Begin met 90% batterij
+    min_battery = actual_capacity * 0.1  # Minimum batterijpercentage
+    max_battery_day = actual_capacity * 0.9  # Maximaal 90% overdag
+    max_battery_night = actual_capacity  # Maximaal 100% 's nachts
+    charging_time_in_min = 15  # Minimaal 15 minuten opladen
 
-    for i, row in df.iterrows():
+    for i, row in circuit_planning.iterrows():
         # Converteer start en eindtijden naar datetime
-        starttijd = datetime.strptime(row['starttijd'], '%H:%M:%S')
-        eindtijd = datetime.strptime(row['eindtijd'], '%H:%M:%S')
+        starting_time = datetime.strptime(row['starttijd'], '%H:%M:%S')
+        end_time = datetime.strptime(row['eindtijd'], '%H:%M:%S')
 
         # Controleer of de rit een dienst of materiaalrit is
         if row['activiteit'] in ['dienst rit', 'materiaal rit']:
-            verbruik = row['energieverbruik']
-            battery -= verbruik
+            consumption = row['energieverbruik']
+            battery -= consumption
 
         # Controleer of de bus idle is en genoeg tijd heeft om op te laden
         if row['activiteit'] == 'idle':
-            idle_starttijd = datetime.strptime(row['starttijd'], '%H:%M:%S')
-            idle_eindtijd = datetime.strptime(row['eindtijd'], '%H:%M:%S')
+            idle_starting_time = datetime.strptime(row['starttijd'], '%H:%M:%S')
+            idle_end_time = datetime.strptime(row['eindtijd'], '%H:%M:%S')
             
-            idle_tijd = (idle_eindtijd - idle_starttijd).total_seconds() / 60  # Idle tijd in minuten
+            idle_time = (idle_end_time - idle_starting_time).total_seconds() / 60  # Idle tijd in minuten
 
             # Laad de bus op als idle tijd minimaal 15 minuten is
-            if idle_tijd >= opladen_minuten:
-                battery = oplaad(battery, DCap, idle_starttijd, vertrektijd, eindtijd)
+            if idle_time >= charging_time_in_min:
+                battery = charging(battery, actual_capacity, idle_starting_time, starting_time, end_time)
 
         # Check batterijstatus na elke stap
         if battery < min_battery:
             print(f"Waarschuwing: batterij te laag op {row['starttijd']}.")
-        elif battery > max_battery_dag and row['activiteit'] != 'idle':
+        elif battery > max_battery_day and row['activiteit'] != 'idle':
             print(f"Waarschuwing: batterij boven 90% tijdens dienst op {row['starttijd']}.")
 
     return battery
 
 # Voorbeeld data
-DCap = 285  # Capaciteit van de bus
-vertrektijd = datetime.strptime('06:00', '%H:%M')
-eindtijd = datetime.strptime('00:00', '%H:%M')
+actual_capacity = 285  # Capaciteit van de bus
+starting_time = datetime.strptime('06:00', '%H:%M')
+end_time = datetime.strptime('00:00', '%H:%M')
 
 # Voer de simulatie uit
-final_battery = simuleer_batterij(df, DCap, vertrektijd, eindtijd)
-print(f"Finale batterijstatus: {final_battery:.2f} kWh")
+final_battery = simulate_battery(circuit_planning, actual_capacity, starting_time, end_time)
+print(f"Uiteindelijke batterijstatus: {final_battery:.2f} kWh")
