@@ -1,11 +1,14 @@
 import pandas as pd
 from datetime import datetime, timedelta
+from wiskundig_model import charging
 
 # je gooit dus het omloopschema erin en dan kijk je op het toelaatbaar is
 # klopt nog niet heel veel van, sorry :(
 
 # er moet rekening mee gehouden worden dat de omlopen veranderd kunnen worden, dat is nu nog niet het geval
 # er moet rekening mee gehouden worden dat in idle er niet opgeladen wordt, maar pas wanneer er van omloop gewisseld wordt
+
+# er moet nog wat geregeld worden met het opladen maar geen idee hoe
 
 circuit_planning = pd.read_excel('omloopplanning.xlsx')
 
