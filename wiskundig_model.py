@@ -61,72 +61,67 @@ Dienstregeling['eindtijd'] = Dienstregeling.apply(bereken_eindtijd, axis=1)
 
 def oplaad(battery, DCap, huidige_tijd, vertrektijd, eindtijd):
     """
-    Beheren batterijstatus met verschillende regels voor opladen voor eerste rit, 
-    tijdens de dag en na de laatste rit. 
-    Parameter: 
-        - batterij: huidige batterijpercentage in kWh
+    Beheren batterijstatus met verschillende regels voor opladen.
+    Parameters: 
+        - battery: huidige batterijpercentage in kWh
         - Dcap: batterijcapaciteit
         - huidige_tijd: het moment waarop de bus moet opladen
         - vertrektijd: tijd van de eerste busrit
         - eindtijd: tijd van de laatste busrit
     Output: Nieuwe batterij percentage in kWh
     """
-    #Minimale batterijpercentage
-    min_battery = 0.10 * DCap #De batterij mag niet onder dit percentage komen
-    max_battery_dag = 0.90 * DCap #Maximale batterij overdag
-    max_battery_nacht = DCap # maximaal 100% voor en na dienstregeling
-    oplaadtijd_minuten = 15 # minimaal voor 15 min opladen
-    opladen_per_min = oplaadtempo_90
-    
-    # als je voor/na de dienstregeling oplaadt, mag je wel tot 100% laden
-    if huidige_tijd < vertrektijd or huidige_tijd > eindtijd: 
-        max_batterij = max_battery_dag
-    else: 
+    # Minimale batterijpercentage
+    min_battery = 0.10 * DCap  # De batterij mag niet onder dit percentage komen
+    max_battery_dag = 0.90 * DCap  # Maximaal 90% overdag
+    max_battery_nacht = DCap  # Maximaal 100% na dienstregeling
+    oplaadtijd_minuten = 15  # Minimaal 15 minuten opladen
+    opladen_per_min = oplaadtempo_90  # Oplaadsnelheid tot 90%
+
+    # Oplaadlimiet afhankelijk van het moment van de dag
+    if huidige_tijd < vertrektijd or huidige_tijd > eindtijd:
+        max_battery = max_battery_nacht
+    else:
         max_battery = max_battery_dag
-    
-    opgeladen_energie = oplaadtijd_minuten * opladen_per_min #hoeveelheid opgeladen energie
+
+    # Opladen gedurende de idle tijd (minimaal 15 minuten)
+    opgeladen_energie = oplaadtijd_minuten * opladen_per_min  # Energie in kWh
 
     if battery <= min_battery: 
         new_battery = battery + opgeladen_energie
-        if new_battery > max_battery: # zorgen dat het niet boven max uitkomt
+        if new_battery > max_battery:  # Zorgen dat het niet boven max uitkomt
             new_battery = max_battery
-    
-    else: 
-        # niet opladen als de batterij boven minimum zit KLOPT DIT?
+    else:
         new_battery = battery
+
     return new_battery
 
-
 def battery_usage(distance, huidige_tijd, vertrektijd, eindtijd, bus_type='high'):
-    """ berekent het energieverbruik per busrit op basis van snelheid
-    het houdt rekening met opladen voor en na dienstregeling. 
-
-    parameters: 
+    """
+    Bereken het energieverbruik per rit op basis van afstand en snelheid.
+    Houdt rekening met opladen voor en na de dienstregeling.
+    Parameters: 
         - distance: afstand van de rit in km
         - huidige_tijd: huidige tijd van de busrit
         - vertrektijd: tijd van de eerste rit.
         - eindtijd: tijd van de laatste rit
-        - bus_type: SOH van de type bus, hoog voor 85% SOH of low voor 95% SOH
-    output: nieuwe batterijpercentage na de rit en eventuele oplaadbeurt
-
+        - bus_type: SOH van de bus (85% of 95%)
+    Output: Nieuwe batterijpercentage na de rit en eventuele oplaadbeurt.
     """
+    # Selecteer de juiste batterijcapaciteit
     if bus_type == 'high': 
-        battery_cap = DCap_85 * 0.9
+        battery_cap = DCap_85 * 0.9  # 85% SOH
     else: 
-        battery_cap = DCap_95 * 0.9
-    
-    # verbruik van de bus tijdens de rit
-    batterij_verbruik = distance * np.mean(usage) # verbruik per km
+        battery_cap = DCap_95 * 0.9  # 95% SOH
+
+    # Verbruik van de bus tijdens de rit (per km)
+    batterij_verbruik = distance * np.mean(usage)  # Verbruik in kWh
     remaining_battery = battery_cap - batterij_verbruik
 
-    remaining_battery = oplaad(remaining_battery, battery_cap, huidige_tijd, vertrektijd, eindtijd) # checken of we moeten opladen
+    # Checken of de bus moet opladen na de rit
+    remaining_battery = oplaad(remaining_battery, battery_cap, huidige_tijd, vertrektijd, eindtijd)
     
     return remaining_battery
-
-       
-
-
-
+ 
 """"   
 Overdag niet meer dan 90% opladen = 229,5 - 256,5 kWh -> staat in functie opladen 
 Altijd tenminste 15 min achtereen worden opgeladen. -> staat ook in opladen
