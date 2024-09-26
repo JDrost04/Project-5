@@ -17,10 +17,9 @@ max_capacity = 300 # maximale capaciteit in kWH
 SOH = [85, 95] # State of Health
 charging_speed_90 = 450 / 60 # kwh per minuut bij opladen tot 90%
 charging_time_10 = 60 /60 # kwh per minuut bij opladen van 90% tot 100%
-actual_capacity_85 = max_capacity * 0.85 # (255 kWh)
-actual_capacity_95 = max_capacity * 0.95 # (285 kWh)
-actual_capacity = [actual_capacity_85, actual_capacity_95]
-daytime_limit = [actual_capacity_85*0.9, actual_capacity_95*0.9]
+actual_capacity_90 = max_capacity * 0.9
+actual_capacity = actual_capacity_90 
+daytime_limit = actual_capacity_90 *0.9
 consumption_per_km = [0.7, 2.5] # kWh per km
 
 distance_matrix["afstand in meters"] = distance_matrix["afstand in meters"]/1000 # Ik bereken hier de afstand in km
@@ -93,7 +92,7 @@ def charging(battery, actual_capacity, current_time, starting_time, end_time):
 
     return new_battery
 
-def battery_consumption(distance, current_time, starting_time, end_time, bus_type='high'):
+def battery_consumption(distance, current_time, starting_time, end_time):
     """
     Bereken het energieverbruik per rit op basis van afstand en snelheid.
     Houdt rekening met opladen voor en na de dienstregeling.
@@ -106,10 +105,7 @@ def battery_consumption(distance, current_time, starting_time, end_time, bus_typ
     Output: Nieuwe batterijpercentage na de rit en eventuele oplaadbeurt.
     """
     # Selecteer de juiste batterijcapaciteit
-    if bus_type == 'high': 
-        battery_capacity = actual_capacity_85 * 0.9  # 85% SOH
-    else: 
-        battery_capacity = actual_capacity_95 * 0.9  # 95% SOH
+    battery_capacity = actual_capacity_90 * 0.9  # gemiddelde battert_capacity
 
     # Verbruik van de bus tijdens de rit (per km)
     battery_consumption = distance * np.mean(consumption_per_km)  # Verbruik in kWh

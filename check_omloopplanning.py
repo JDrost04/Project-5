@@ -3,12 +3,18 @@ from datetime import datetime, timedelta
 from wiskundig_model import charging
 
 # je gooit dus het omloopschema erin en dan kijk je op het toelaatbaar is
-# klopt nog niet heel veel van, sorry :(
-
 # er moet rekening mee gehouden worden dat de omlopen veranderd kunnen worden, dat is nu nog niet het geval
 # er moet rekening mee gehouden worden dat in idle er niet opgeladen wordt, maar pas wanneer er van omloop gewisseld wordt
-
 # er moet nog wat geregeld worden met het opladen maar geen idee hoe
+
+#Bij de laatste stop mag de batterij niet onder de 10% zitten, is dit wel het geval dat geeft het een error # Geen energie meer 
+#kijken of de oplaadtijd meer dan 15 minuten is 
+#Bus moet teleporteren: eindlocatie is ook beginlocatie 
+#Kijken of het overeenkomt met planning 
+#Zorgen dat elke rit gecoverd is 
+#Uiteindelijke eindlocatie en beginlocatie is de garage  
+#Reistijd ligt tussen minimale reistijd en maximale reistijd 
+#Tussen alles zit een idle
 
 circuit_planning = pd.read_excel('omloopplanning.xlsx')
 
